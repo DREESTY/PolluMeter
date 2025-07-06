@@ -57,6 +57,7 @@ function getPrimaryPollutant(pollutants: any): string {
   const maxPollutant = Object.entries(values).reduce((a, b) => values[a[0]] > values[b[0]] ? a : b);
   
   return maxPollutant[0];
+}i));
 }
 
 function generateNearbyAreas(cityName: string): string[] {
@@ -136,7 +137,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
               const aqi = calculateAqiFromPollutants(pollutants);
               const level = getAqiLevel(aqi);
-              const primaryPollutant = getPrimaryPollutant(pollutants);
+              const primaryPollutant = getPrimaryPollutant(pollutants);ants);
 
               aqiReading = await storage.createAqiReading({
                 locationId,
