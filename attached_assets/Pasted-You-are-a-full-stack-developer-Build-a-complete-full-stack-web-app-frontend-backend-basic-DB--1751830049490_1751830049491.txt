@@ -1,0 +1,46 @@
+You are a full-stack developer. Build a complete full-stack web app (frontend + backend + basic DB) called **"PolluMeter"** – a Real-Time Air Quality Visualizer focused on underserved areas in India. 
+
+🎯 Goal: Create an interactive dashboard where users can:
+- See their current AQI based on location (with pollutant breakdown)
+- Get weather info
+- View a 48-hour AQI forecast (use dummy data or random walk for now)
+- Browse an interactive AQI map
+- Set custom AQI alert thresholds
+
+🛠 Tech Stack:
+- **Frontend:** React.js with Vite + TypeScript + TailwindCSS, React Router
+- **Backend:** FastAPI with async `httpx` for API calls
+- **Database:** SQLite or PostgreSQL using SQLAlchemy
+- **State management:** Zustand (or use React Context if simpler)
+- **Deployment-ready with Docker (optional)**
+
+📦 APIs to integrate:
+- OpenAQ: `https://api.openaq.org/v2/latest`
+- OpenWeatherMap: `https://api.openweathermap.org/data/2.5/weather`
+- Use mock data for forecast right now
+
+💡 Features to implement:
+1. **Location detection** via browser or manual city input
+2. **Home page** showing:
+   - Current AQI (color-coded)
+   - Main pollutant
+   - Weather card (temp, wind, humidity)
+   - Health tips based on AQI level
+3. **Forecast page**:
+   - Line chart of AQI for next 48 hours (use dummy data)
+4. **Map page**:
+   - Show surrounding area’s AQI using Mapbox or Leaflet
+5. **Alert page**:
+   - Let user set threshold for AQI alerts (no notifications needed yet)
+6. **Settings page**:
+   - Language toggle (EN/HI, optional), set location manually
+
+📁 Expected Output:
+- All code in a folder with clear `/frontend` and `/backend` directories
+- README with how to run both parts locally
+- Working React UI connected to FastAPI backend
+- Backend calls external APIs and sends data to frontend
+
+🚫 Do not include any ML model now — use dummy forecast logic only.
+
+✅ Start with setting up folders, frontend and backend skeletons, then implement endpoints, API fetches, and UI pages one by one.
