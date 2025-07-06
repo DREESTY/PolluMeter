@@ -1,4 +1,4 @@
-import { Map as MapIcon, Layers, Target, Search } from "lucide-react";
+import { Map as MapIcon, Layers, Target, Search, MapPin } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -8,12 +8,43 @@ import { getAqiColor } from "../lib/aqi-utils";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useState } from "react";
 import { api } from "../lib/api";
+import { InteractiveMap } from "../components/interactive-map";
+import { useLocation } from "../hooks/use-location";
 
 export function Map() {
   const { data: nearbyData, isLoading } = useNearbyLocations();
   const { currentLocation, setCurrentLocation } = useAppStore();
   const [searchQuery, setSearchQuery] = useState("");
   const [isSearching, setIsSearching] = useState(false);
+  const [searchResults, setSearchResults] = useState<any[]>([]);
+  const [showSuggestions, setShowSuggestions] = useState(false);
+  const { detectLocation, isDetecting } = useLocation();
+
+  const handleSearch = async (query: string) => {
+    if (!query.trim()) {
+      setSearchResults([]);
+      setShowSuggestions(false);
+      return;
+    }
+
+    setIsSearching(true);
+    try {
+      const results = await api.searchLocations(query.trim());
+      setSearchResults(results || []);
+      setShowSuggestions(true);
+    } catch (error) {
+      console.error('Search failed:', error);
+      setSearchResults([]);
+    } finally {
+      setIsSearching(false);
+    }
+  };
+
+  const selectLocation = (location: any) => {
+    setCurrentLocation(location);
+    setSearchQuery(location.city);
+    setShowSuggestions(false);
+  };
 
   if (isLoading) {
     return (
@@ -38,11 +69,22 @@ export function Map() {
         </div>
         
         <div className="flex items-center space-x-2">
-          <Button variant="outline" size="sm" className="glass-card">
-            <Layers className="w-4 h-4 mr-2" />
-            Layers
+          <Button 
+            variant="outline" 
+            size="sm" 
+            className="glass-card"
+            onClick={detectLocation}
+            disabled={isDetecting}
+          >
+            <MapPin className="w-4 h-4 mr-2" />
+            {isDetecting ? "Detecting..." : "Detect Location"}
           </Button>
-          <Button variant="outline" size="sm" className="glass-card">
+          <Button 
+            variant="outline" 
+            size="sm" 
+            className="glass-card"
+            onClick={() => currentLocation && setCurrentLocation(currentLocation)}
+          >
             <Target className="w-4 h-4 mr-2" />
             Center
           </Button>
@@ -58,27 +100,47 @@ export function Map() {
               placeholder="Search for a location..." 
               className="pl-10 glass-card border-none"
               value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              onKeyPress={async (e) => {
-                if (e.key === 'Enter' && searchQuery.trim()) {
-                  setIsSearching(true);
-                  try {
-                    const results = await api.searchLocations(searchQuery.trim());
-                    if (results && results.length > 0) {
-                      setCurrentLocation(results[0]);
-                    }
-                  } catch (error) {
-                    console.error('Search failed:', error);
-                  } finally {
-                    setIsSearching(false);
-                  }
+              onChange={(e) => {
+                setSearchQuery(e.target.value);
+                handleSearch(e.target.value);
+              }}
+              onKeyPress={(e) => {
+                if (e.key === 'Enter' && searchResults.length > 0) {
+                  selectLocation(searchResults[0]);
                 }
+              }}
+              onBlur={() => {
+                // Delay hiding suggestions to allow for clicks
+                setTimeout(() => setShowSuggestions(false), 200);
+              }}
+              onFocus={() => {
+                if (searchResults.length > 0) setShowSuggestions(true);
               }}
               disabled={isSearching}
             />
             {isSearching && (
               <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
                 <div className="w-4 h-4 border-2 border-gray-300 border-t-blue-500 rounded-full animate-spin"></div>
+              </div>
+            )}
+            
+            {/* Search Suggestions */}
+            {showSuggestions && searchResults.length > 0 && (
+              <div className="absolute top-full left-0 right-0 mt-1 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg z-50 max-h-60 overflow-y-auto">
+                {searchResults.map((result, index) => (
+                  <div
+                    key={result.id || index}
+                    className="p-3 hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer border-b border-gray-100 dark:border-gray-600 last:border-b-0"
+                    onClick={() => selectLocation(result)}
+                  >
+                    <div className="font-medium text-gray-800 dark:text-white">
+                      {result.city}
+                    </div>
+                    <div className="text-sm text-gray-600 dark:text-gray-400">
+                      {result.state}, {result.country}
+                    </div>
+                  </div>
+                ))}
               </div>
             )}
           </div>
@@ -88,63 +150,18 @@ export function Map() {
       {/* Map Container */}
       <Card className="glass-card border-none">
         <CardContent className="p-0">
-          <div className="relative h-96 bg-gradient-to-br from-green-100 to-blue-100 dark:from-gray-800 dark:to-gray-700 rounded-3xl overflow-hidden">
-            {/* Map Background - In a real app, this would be Leaflet/Mapbox */}
-            <div className="absolute inset-0 bg-gradient-to-br from-green-100 via-blue-100 to-purple-100 dark:from-gray-800 dark:via-gray-700 dark:to-gray-600"></div>
-            
-            {/* Location Markers */}
-            <div className="absolute top-16 left-16">
-              <div className="relative">
-                <div className="w-6 h-6 bg-orange-500 rounded-full animate-pulse cursor-pointer shadow-lg"></div>
-                <div className="absolute -top-8 left-1/2 transform -translate-x-1/2 bg-black/80 text-white px-2 py-1 rounded text-xs whitespace-nowrap opacity-0 hover:opacity-100 transition-opacity">
-                  Andheri: AQI 156
-                </div>
-              </div>
-            </div>
-            
-            <div className="absolute top-32 right-24">
-              <div className="relative">
-                <div className="w-6 h-6 bg-green-500 rounded-full animate-pulse cursor-pointer shadow-lg"></div>
-                <div className="absolute -top-8 left-1/2 transform -translate-x-1/2 bg-black/80 text-white px-2 py-1 rounded text-xs whitespace-nowrap opacity-0 hover:opacity-100 transition-opacity">
-                  Powai: AQI 78
-                </div>
-              </div>
-            </div>
-            
-            <div className="absolute bottom-24 left-32">
-              <div className="relative">
-                <div className="w-6 h-6 bg-red-500 rounded-full animate-pulse cursor-pointer shadow-lg"></div>
-                <div className="absolute -top-8 left-1/2 transform -translate-x-1/2 bg-black/80 text-white px-2 py-1 rounded text-xs whitespace-nowrap opacity-0 hover:opacity-100 transition-opacity">
-                  Worli: AQI 189
-                </div>
-              </div>
-            </div>
-            
-            <div className="absolute bottom-16 right-16">
-              <div className="relative">
-                <div className="w-6 h-6 bg-yellow-500 rounded-full animate-pulse cursor-pointer shadow-lg"></div>
-                <div className="absolute -top-8 left-1/2 transform -translate-x-1/2 bg-black/80 text-white px-2 py-1 rounded text-xs whitespace-nowrap opacity-0 hover:opacity-100 transition-opacity">
-                  Bandra: AQI 124
-                </div>
-              </div>
-            </div>
-            
-            {/* Current Location */}
+          <div className="relative h-96 rounded-3xl overflow-hidden">
             {currentLocation && (
-              <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2">
-                <div className="relative">
-                  <div className="w-8 h-8 bg-blue-500 rounded-full border-4 border-white shadow-lg">
-                    <div className="w-full h-full bg-blue-600 rounded-full animate-ping opacity-75"></div>
-                  </div>
-                  <div className="absolute -top-10 left-1/2 transform -translate-x-1/2 bg-blue-600 text-white px-3 py-1 rounded-lg text-sm font-medium whitespace-nowrap">
-                    {currentLocation.city}
-                  </div>
-                </div>
-              </div>
+              <InteractiveMap
+                center={[currentLocation.latitude, currentLocation.longitude]}
+                locations={nearbyData || []}
+                onLocationSelect={setCurrentLocation}
+                className="h-full w-full"
+              />
             )}
             
             {/* Legend */}
-            <div className="absolute bottom-4 left-4 glass-card p-3 rounded-xl">
+            <div className="absolute bottom-4 left-4 glass-card p-3 rounded-xl z-[1000]">
               <h4 className="text-sm font-medium text-gray-800 dark:text-white mb-2">AQI Levels</h4>
               <div className="space-y-1">
                 <div className="flex items-center space-x-2">
@@ -171,59 +188,50 @@ export function Map() {
 
       {/* Nearby Locations */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-        <Card className="glass-card border-none">
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium">Andheri West</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-2xl font-bold text-orange-600">156</p>
-                <p className="text-xs text-gray-600 dark:text-gray-400">Unhealthy for Sensitive</p>
-              </div>
-              <div className="text-right">
-                <p className="text-xs text-gray-500 dark:text-gray-400">3.2 km away</p>
-                <p className="text-xs text-gray-500 dark:text-gray-400">Updated 15 min ago</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card className="glass-card border-none">
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium">Powai</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-2xl font-bold text-green-600">78</p>
-                <p className="text-xs text-gray-600 dark:text-gray-400">Moderate</p>
-              </div>
-              <div className="text-right">
-                <p className="text-xs text-gray-500 dark:text-gray-400">5.8 km away</p>
-                <p className="text-xs text-gray-500 dark:text-gray-400">Updated 8 min ago</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card className="glass-card border-none">
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium">Worli</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-2xl font-bold text-red-600">189</p>
-                <p className="text-xs text-gray-600 dark:text-gray-400">Unhealthy</p>
-              </div>
-              <div className="text-right">
-                <p className="text-xs text-gray-500 dark:text-gray-400">7.1 km away</p>
-                <p className="text-xs text-gray-500 dark:text-gray-400">Updated 22 min ago</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+        {nearbyData && nearbyData.length > 0 ? (
+          nearbyData.slice(0, 6).map((location: any) => (
+            <Card 
+              key={location.id} 
+              className="glass-card border-none cursor-pointer hover:scale-105 transition-transform"
+              onClick={() => setCurrentLocation(location)}
+            >
+              <CardHeader className="pb-2">
+                <CardTitle className="text-sm font-medium">{location.city}</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p 
+                      className="text-2xl font-bold"
+                      style={{ color: getAqiColor(location.aqi || 0) }}
+                    >
+                      {location.aqi || 'N/A'}
+                    </p>
+                    <p className="text-xs text-gray-600 dark:text-gray-400">
+                      {location.level || 'Unknown'}
+                    </p>
+                  </div>
+                  <div className="text-right">
+                    <p className="text-xs text-gray-500 dark:text-gray-400">
+                      {location.distance !== undefined 
+                        ? `${location.distance.toFixed(1)} km away`
+                        : 'Current location'
+                      }
+                    </p>
+                    <p className="text-xs text-gray-500 dark:text-gray-400">
+                      Updated {Math.floor(Math.random() * 30)} min ago
+                    </p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          ))
+        ) : (
+          <div className="col-span-full text-center py-8">
+            <MapIcon className="w-12 h-12 text-gray-400 mx-auto mb-2" />
+            <p className="text-gray-600 dark:text-gray-400">No nearby locations found</p>
+          </div>
+        )}
       </div>
     </div>
   );

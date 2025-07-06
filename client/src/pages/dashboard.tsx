@@ -3,7 +3,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { useCurrentAqi, useAqiForecast, useAqiHistory } from "../hooks/use-aqi";
 import { getAqiGradient, getHealthRecommendations, formatPollutantValue } from "../lib/aqi-utils";
 import { Skeleton } from "@/components/ui/skeleton";
-import { LineChart, Line, XAxis, YAxis, ResponsiveContainer } from 'recharts';
+import { LineChart, Line, XAxis, YAxis, ResponsiveContainer, Tooltip } from 'recharts';
 
 const iconMap = {
   AlertTriangle,
@@ -27,6 +27,23 @@ function getWeatherIcon(iconCode: string) {
   if (iconCode?.includes('50')) return '🌫️';
   return '☁️';
 }
+
+// Custom tooltip component for the chart
+const CustomTooltip = ({ active, payload, label }: any) => {
+  if (active && payload && payload.length) {
+    const data = payload[0];
+    return (
+      <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-3 shadow-lg">
+        <p className="text-sm font-medium text-gray-800 dark:text-white">{label}</p>
+        <p className="text-sm text-gray-600 dark:text-gray-400">
+          <span className="font-semibold">AQI: </span>
+          <span className="text-blue-600 dark:text-blue-400">{data.value}</span>
+        </p>
+      </div>
+    );
+  }
+  return null;
+};
 
 export function Dashboard() {
   const { data: currentData, isLoading: currentLoading } = useCurrentAqi();
@@ -236,6 +253,7 @@ export function Dashboard() {
                   tickLine={false}
                   className="text-gray-600 dark:text-gray-400"
                 />
+                <Tooltip content={<CustomTooltip />} />
                 <Line 
                   type="monotone" 
                   dataKey="aqi" 
