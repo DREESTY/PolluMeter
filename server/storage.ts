@@ -83,7 +83,7 @@ export class MemStorage implements IStorage {
   async getLocationByCoords(lat: number, lon: number): Promise<Location | undefined> {
     // Simple distance-based search (in real app would use proper geospatial queries)
     const threshold = 0.01; // ~1km
-    for (const location of this.locations.values()) {
+    for (const location of Array.from(this.locations.values())) {
       const distance = Math.sqrt(
         Math.pow(location.latitude - lat, 2) + Math.pow(location.longitude - lon, 2)
       );
@@ -91,14 +91,29 @@ export class MemStorage implements IStorage {
         return location;
       }
     }
-    return null;
+    return undefined;
+  }
+
+  async createLocation(insertLocation: InsertLocation): Promise<Location> {
+    const id = this.currentLocationId++;
+    const location: Location = {
+      id,
+      city: insertLocation.city,
+      state: insertLocation.state,
+      country: insertLocation.country,
+      latitude: insertLocation.latitude,
+      longitude: insertLocation.longitude,
+      createdAt: new Date()
+    };
+    this.locations.set(id, location);
+    return location;
   }
 
   async searchLocations(query: string): Promise<Location[]> {
     const results: Location[] = [];
     const lowerQuery = query.toLowerCase();
 
-    for (const location of this.locations.values()) {
+    for (const location of Array.from(this.locations.values())) {
       if (location.city.toLowerCase().includes(lowerQuery) ||
           location.state.toLowerCase().includes(lowerQuery) ||
           location.country.toLowerCase().includes(lowerQuery)) {
