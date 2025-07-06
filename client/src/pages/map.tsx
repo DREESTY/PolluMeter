@@ -6,10 +6,14 @@ import { useNearbyLocations } from "../hooks/use-aqi";
 import { useAppStore } from "../store/app-store";
 import { getAqiColor } from "../lib/aqi-utils";
 import { Skeleton } from "@/components/ui/skeleton";
+import { useState } from "react";
+import { api } from "../lib/api";
 
 export function Map() {
   const { data: nearbyData, isLoading } = useNearbyLocations();
-  const { currentLocation } = useAppStore();
+  const { currentLocation, setCurrentLocation } = useAppStore();
+  const [searchQuery, setSearchQuery] = useState("");
+  const [isSearching, setIsSearching] = useState(false);
 
   if (isLoading) {
     return (
@@ -53,7 +57,30 @@ export function Map() {
             <Input 
               placeholder="Search for a location..." 
               className="pl-10 glass-card border-none"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              onKeyPress={async (e) => {
+                if (e.key === 'Enter' && searchQuery.trim()) {
+                  setIsSearching(true);
+                  try {
+                    const results = await api.searchLocations(searchQuery.trim());
+                    if (results && results.length > 0) {
+                      setCurrentLocation(results[0]);
+                    }
+                  } catch (error) {
+                    console.error('Search failed:', error);
+                  } finally {
+                    setIsSearching(false);
+                  }
+                }
+              }}
+              disabled={isSearching}
             />
+            {isSearching && (
+              <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
+                <div className="w-4 h-4 border-2 border-gray-300 border-t-blue-500 rounded-full animate-spin"></div>
+              </div>
+            )}
           </div>
         </CardContent>
       </Card>

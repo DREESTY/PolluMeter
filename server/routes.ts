@@ -187,6 +187,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const locations = await storage.searchLocations(query);
       res.json(locations);
     } catch (error) {
+      console.error("Error searching locations:", error);
       res.status(500).json({ message: "Internal server error" });
     }
   });
@@ -219,14 +220,43 @@ export async function registerRoutes(app: Express): Promise<Server> {
               latitude: lat,
               longitude: lon
             });
+          } else {
+            // If geocoding fails, create a generic location
+            location = await storage.createLocation({
+              city: "Unknown Location",
+              state: "Unknown",
+              country: "Unknown",
+              latitude: lat,
+              longitude: lon
+            });
           }
         } catch (error) {
           console.error("Error with reverse geocoding:", error);
+          // Create a fallback location
+          location = await storage.createLocation({
+            city: "Unknown Location",
+            state: "Unknown",
+            country: "Unknown",
+            latitude: lat,
+            longitude: lon
+          });
         }
+      }
+
+      // Ensure we always return a location object
+      if (!location) {
+        location = await storage.createLocation({
+          city: "Unknown Location",
+          state: "Unknown",
+          country: "Unknown",
+          latitude: lat,
+          longitude: lon
+        });
       }
 
       res.json(location);
     } catch (error) {
+      console.error("Error in coords endpoint:", error);
       res.status(500).json({ message: "Internal server error" });
     }
   });
