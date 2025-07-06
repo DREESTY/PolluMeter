@@ -45,21 +45,6 @@ function calculateAqiFromPollutants(pollutants: any): number {
   return Math.round(Math.max(pm25Aqi, pm10Aqi, o3Aqi));
 }
 
-function getPrimaryPollutant(pollutants: any): string {
-  const pm25 = pollutants.pm25 || 0;
-  const pm10 = pollutants.pm10 || 0;
-  const o3 = pollutants.o3 || 0;
-  const no2 = pollutants.no2 || 0;
-  const so2 = pollutants.so2 || 0;
-  const co = pollutants.co || 0;
-  
-  const values = { pm25, pm10, o3, no2, so2, co };
-  const maxPollutant = Object.entries(values).reduce((a, b) => values[a[0]] > values[b[0]] ? a : b);
-  
-  return maxPollutant[0];
-}i));
-}
-
 function generateNearbyAreas(cityName: string): string[] {
   // Generate nearby area names based on common Indian city patterns
   const mumbaiAreas = ["Andheri West", "Powai", "Worli", "Bandra", "Juhu", "Vile Parle"];
@@ -137,7 +122,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
               const aqi = calculateAqiFromPollutants(pollutants);
               const level = getAqiLevel(aqi);
-              const primaryPollutant = getPrimaryPollutant(pollutants);ants);
+              const primaryPollutant = getPrimaryPollutant(pollutants);
 
               aqiReading = await storage.createAqiReading({
                 locationId,
