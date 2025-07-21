@@ -1,6 +1,31 @@
-node_modules
-dist
+# Dependency folders
+node_modules/
+
+# Build output
+dist/
+build/
+
+# Local env variables
+.env
+
+# OS/system files
 .DS_Store
-server/public
-vite.config.ts.*
+Thumbs.db
+
+# VSCode/editor settings
+.vscode/
+*.log
+
+# Sensitive or generated frontend/server assets
+server/public/
+
+# Compiled/temporary files
 *.tar.gz
+*.zip
+*.tmp
+*.log
+
+# Ignore all config backup files (if any)
+vite.config.ts.*
+"vite.config.ts" 
+"attached_assets/" 
